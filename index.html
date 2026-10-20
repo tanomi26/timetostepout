@@ -160,11 +160,15 @@
   .row.night .dot { background: transparent; border: 1.5px solid var(--meh); }
   .bell { color: var(--great); font-size: 12px; font-weight: 600; margin-left: 6px; }
 
-  .hourly summary { display: flex; align-items: baseline; justify-content: space-between; cursor: pointer; list-style: none; }
-  .hourly summary::-webkit-details-marker { display: none; }
-  .hourly .toggle { font-size: 13px; color: var(--accent); }
-  .hourly .toggle::after { content: "Show ›"; }
-  .hourly[open] .toggle::after { content: "Hide"; }
+  .section-toggle {
+    display: flex; width: 100%; justify-content: space-between; align-items: center;
+    margin: 22px 0 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); color: inherit; font: inherit; cursor: pointer; text-align: left;
+  }
+  .section-toggle:hover { border-color: var(--muted); }
+  .section-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .toggle-label { font-size: 13px; color: var(--accent); }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin: 10px 2px 0; }
   .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
   .legend .g::before { background: var(--great); }
@@ -198,11 +202,13 @@
     <h2>Today's updates</h2>
     <div id="notifs"></div>
 
-    <details class="hourly">
-      <summary><h2>Hour by hour</h2><span class="toggle"></span></summary>
+    <button class="section-toggle" id="hourlyToggle" aria-expanded="false" aria-controls="hourly">
+      <span class="section-title">Hour by hour</span><span class="toggle-label">Show ›</span>
+    </button>
+    <div id="hourly" hidden>
       <div class="hours" id="hours"></div>
       <div class="legend"><span class="g">Great</span><span class="o">Okay</span><span class="m">Not the best</span><span class="n">After sunset</span></div>
-    </details>
+    </div>
 
     <p class="rules">"Great" means 60–72°F, wind under 12 mph, gusts under 20 mph, under 20% chance of rain, and no fog. Updates are at least 2½ hours apart, with at most two a day. Days with no great weather get no updates.</p>
   </div>
@@ -481,6 +487,13 @@ function notifHTML(u) {
     <details><summary>Why it's great ›</summary><ul>${why.join("")}</ul></details>
   </div>`;
 }
+
+$("hourlyToggle").addEventListener("click", () => {
+  const btn = $("hourlyToggle"), open = btn.getAttribute("aria-expanded") !== "true";
+  btn.setAttribute("aria-expanded", open);
+  btn.querySelector(".toggle-label").textContent = open ? "Hide" : "Show ›";
+  $("hourly").hidden = !open;
+});
 
 render();
 </script>
