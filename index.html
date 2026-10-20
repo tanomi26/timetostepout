@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Time to Step Out</title>
+<style>
+  :root {
+    --page: #e9edf1;
+    --phone: #f8f8f6;
+    --card: #ffffff;
+    --ink: #17212b;
+    --muted: #5e6b78;
+    --line: #e2e6ea;
+    --great: #1d7f55;
+    --great-bg: #dff2e7;
+    --okay: #9a6512;
+    --okay-bg: #f8ecd6;
+    --meh: #66727e;
+    --meh-bg: #eceef1;
+    --night-bg: #e4e6ee;
+    --accent: #1f6fb2;
+    --chip: #ffffff;
+    --chip-on: #17212b;
+    --chip-on-ink: #ffffff;
+    --bezel: #121417;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0e1114;
+      --phone: #15191d;
+      --card: #1e2328;
+      --ink: #e9edf0;
+      --muted: #9aa6b1;
+      --line: #2b3238;
+      --great: #5fd09b;
+      --great-bg: #173a2a;
+      --okay: #e6b45e;
+      --okay-bg: #3a2e17;
+      --meh: #9aa6b1;
+      --meh-bg: #262c32;
+      --night-bg: #1b1f2a;
+      --accent: #6cb2ec;
+      --chip: #1e2328;
+      --chip-on: #e9edf0;
+      --chip-on-ink: #15191d;
+      --bezel: #000000;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0e1114; --phone: #15191d; --card: #1e2328; --ink: #e9edf0; --muted: #9aa6b1;
+    --line: #2b3238; --great: #5fd09b; --great-bg: #173a2a; --okay: #e6b45e; --okay-bg: #3a2e17;
+    --meh: #9aa6b1; --meh-bg: #262c32; --night-bg: #1b1f2a; --accent: #6cb2ec; --chip: #1e2328;
+    --chip-on: #e9edf0; --chip-on-ink: #15191d; --bezel: #000000;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 40px;
+  }
+  .caption {
+    max-width: 390px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    margin: 0 0 16px;
+  }
+
+  .phone {
+    width: 390px;
+    height: 820px;
+    max-width: 100%;
+    background: var(--phone);
+    border: 11px solid var(--bezel);
+    border-radius: 54px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,.35);
+    display: flex;
+    flex-direction: column;
+  }
+  .statusbar {
+    flex: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 28px 6px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .island { width: 110px; height: 30px; background: var(--bezel); border-radius: 20px; }
+  .screen { flex: 1; overflow-y: auto; padding: 4px 18px 28px; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  .place { color: var(--muted); font-size: 12px; letter-spacing: .02em; margin: 6px 0 0; }
+  h1 { font-size: 26px; margin: 0 0 14px; letter-spacing: -.01em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 22px 0 8px; font-weight: 600; }
+
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin: 0 -18px; padding-left: 18px; padding-right: 18px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; border: 1px solid var(--line); background: var(--chip); color: var(--ink);
+    border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); border-color: var(--chip-on); }
+  .daydesc { font-size: 14px; color: var(--muted); margin: 10px 0 0; font-style: italic; }
+
+  .verdict { margin-top: 14px; border-radius: 20px; padding: 16px 18px; background: var(--card); border: 1px solid var(--line); }
+  .verdict .label { font-size: 12px; color: var(--muted); }
+  .verdict .word { font-size: 30px; font-weight: 700; letter-spacing: -.01em; margin: 2px 0; }
+  .verdict.great .word { color: var(--great); }
+  .verdict.okay .word { color: var(--okay); }
+  .verdict.meh .word { color: var(--meh); }
+  .verdict .sum { font-size: 14px; color: var(--muted); }
+
+  .notif {
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .notif-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .appicon {
+    width: 20px; height: 20px; border-radius: 6px; flex: none;
+    background: linear-gradient(160deg, #f6c453, #3aa676);
+    display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700;
+  }
+  .notif-head .when { margin-left: auto; }
+  .notif-title { font-weight: 650; margin: 6px 0 2px; }
+  .notif-body { font-size: 14px; }
+  .notif details { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .notif summary { cursor: pointer; color: var(--accent); list-style: none; }
+  .notif summary::-webkit-details-marker { display: none; }
+  .notif ul { margin: 6px 0 0; padding-left: 18px; }
+  .notif li { margin: 2px 0; }
+  .empty { background: var(--card); border: 1px dashed var(--line); border-radius: 18px; padding: 16px; color: var(--muted); font-size: 14px; }
+  .skipnote { font-size: 12px; color: var(--muted); margin: -2px 4px 10px; }
+
+  .hours { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .row {
+    display: grid; grid-template-columns: 52px 10px 1fr auto; gap: 10px; align-items: center;
+    padding: 9px 14px; border-top: 1px solid var(--line); font-size: 14px;
+  }
+  .row:first-child { border-top: 0; }
+  .row .t { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+  .row .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .row .sky { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .nums { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .row.great { background: var(--great-bg); }
+  .row.great .dot { background: var(--great); }
+  .row.okay .dot { background: var(--okay); }
+  .row.meh .dot { background: var(--meh); opacity: .55; }
+  .row.night { background: var(--night-bg); color: var(--muted); }
+  .row.night .dot { background: transparent; border: 1.5px solid var(--meh); }
+  .bell { color: var(--great); font-size: 12px; font-weight: 600; margin-left: 6px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin: 10px 2px 0; }
+  .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+  .legend .g::before { background: var(--great); }
+  .legend .o::before { background: var(--okay); }
+  .legend .m::before { background: var(--meh); opacity: .55; }
+  .legend .n::before { border: 1.5px solid var(--meh); }
+  .rules { font-size: 12px; color: var(--muted); margin: 18px 2px 0; }
+
+  @media (max-width: 440px) {
+    body { padding: 0; }
+    .caption { display: none; }
+    .phone { width: 100%; height: 100vh; border: 0; border-radius: 0; box-shadow: none; }
+    .island { display: none; }
+  }
+</style>
+</head>
+<body>
+<p class="caption">Prototype: pick a sample day to see which updates you'd get. The data is made up but has the same shape as an Open-Meteo hourly forecast.</p>
+
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="island"></span><span>5G</span></div>
+  <div class="screen">
+    <p class="place">Pacific Heights · Alamo Square</p>
+    <h1>Time to Step Out</h1>
+
+    <div class="chips" id="chips" role="group" aria-label="Sample day"></div>
+    <p class="daydesc" id="daydesc"></p>
+
+    <div class="verdict" id="verdict"></div>
+
+    <h2>Today's updates</h2>
+    <div id="notifs"></div>
+
+    <h2>Hour by hour</h2>
+    <div class="hours" id="hours"></div>
+    <div class="legend"><span class="g">Great</span><span class="o">Okay</span><span class="m">Not the best</span><span class="n">After sunset</span></div>
+
+    <p class="rules">"Great" means 60–72°F, wind under 12 mph, gusts under 20 mph, under 20% chance of rain, and no fog. Updates are at least 2½ hours apart, with at most two a day. Days with no great weather get no updates.</p>
+  </div>
+</div>
+
+<script>
+// ---- Sample data: hourly rows for 7am–8pm. [temp °F, wind mph, gust mph, cloud %, visibility mi, rain chance %]
+const SUNSET = 18 + 25 / 60; // ~6:25pm, mid-October
+const FIRST_HOUR = 7;
+
+const DAYS = [
+  {
+    short: "Fog → sun",
+    desc: "A classic foggy morning that clears to a sunny afternoon",
+    hours: [
+      [54,4,8,100,0.5,10],[55,4,8,100,0.6,10],[56,5,9,95,1.0,5],[58,5,9,80,1.8,5],
+      [61,6,10,40,6,0],[64,7,12,15,10,0],[66,8,13,5,10,0],[67,9,15,5,10,0],
+      [66,11,18,5,10,0],[64,15,24,10,10,0],[62,17,26,20,10,0],[59,16,24,50,8,0],
+      [57,14,20,70,5,0],[56,12,18,85,3,0],
+    ],
+  },
+  {
+    short: "Windy afternoon",
+    desc: "A windy afternoon after a nice lunch",
+    hours: [
+      [55,6,10,60,6,0],[57,7,11,50,8,0],[59,8,12,30,10,0],[61,8,13,20,10,0],
+      [63,9,14,10,10,0],[65,10,16,10,10,0],[65,13,21,10,10,0],[64,18,28,15,10,0],
+      [63,21,31,20,10,0],[62,22,32,20,10,0],[60,20,30,25,10,0],[58,18,27,30,10,0],
+      [57,16,24,40,10,0],[56,14,21,50,10,0],
+    ],
+  },
+  {
+    short: "Warm evening",
+    desc: "A rare warm, still evening",
+    hours: [
+      [58,3,6,90,3,0],[60,3,6,60,6,0],[63,4,7,40,10,0],[66,5,8,20,10,0],
+      [69,7,11,10,10,0],[73,9,14,5,10,0],[75,10,15,0,10,0],[76,10,16,0,10,0],
+      [74,8,13,0,10,0],[72,6,10,0,10,0],[70,4,8,0,10,0],[68,3,6,5,10,0],
+      [66,2,5,10,10,0],[64,2,5,15,10,0],
+    ],
+  },
+  {
+    short: "Grey all day",
+    desc: "An all-day grey day where nothing qualifies",
+    hours: [
+      [54,8,12,100,0.8,50],[54,9,13,100,0.9,55],[55,10,14,100,1.2,50],[56,10,15,100,1.5,45],
+      [57,11,16,100,1.8,45],[58,12,18,100,2.2,40],[58,13,19,100,2.4,40],[58,13,20,100,2.4,45],
+      [57,14,21,100,2.0,50],[56,14,21,100,1.6,55],[55,13,20,100,1.2,55],[55,12,18,100,0.9,60],
+      [54,11,17,100,0.8,60],[54,10,15,100,0.7,55],
+    ],
+  },
+  {
+    short: "Breezy middle",
+    desc: "A crisp, clear day with a breezy middle",
+    hours: [
+      [52,4,7,0,10,0],[56,5,8,0,10,0],[60,6,9,0,10,0],[62,8,12,0,10,0],
+      [63,12,19,0,10,0],[64,15,23,0,10,0],[64,16,24,0,10,0],[64,13,20,5,10,0],
+      [64,10,16,5,10,0],[63,8,13,5,10,0],[61,6,10,10,10,0],[58,5,9,10,10,0],
+      [56,5,8,15,10,0],[55,5,8,20,10,0],
+    ],
+  },
+];
+
+// ---- Rules
+const RULES = { tMin: 60, tMax: 72, wind: 12, gust: 20, rain: 20, fogVis: 2 };
+const MIN_GAP = 2.5;
+const VOLATILE = new Set(["wind", "fog"]); // hard-to-forecast changes in SF
+
+function toHour(row, i) {
+  const [temp, wind, gust, cloud, vis, rain] = row;
+  return { h: FIRST_HOUR + i, temp, wind, gust, cloud, vis, rain };
+}
+
+function classify(d) {
+  if (d.h >= SUNSET) return { status: "night", fails: ["dark"] };
+  const fails = [];
+  if (d.wind >= RULES.wind || d.gust >= RULES.gust) fails.push("wind");
+  if (d.vis < RULES.fogVis) fails.push("fog");
+  if (d.rain >= RULES.rain) fails.push("rain");
+  if (d.temp < RULES.tMin) fails.push("cold");
+  if (d.temp > RULES.tMax) fails.push("hot");
+  if (!fails.length) return { status: "great", fails };
+  const okay = d.temp >= 55 && d.temp <= 76 && d.wind < 16 && d.gust < 26 && d.rain < 40 && d.vis >= 1;
+  return { status: okay ? "okay" : "meh", fails };
+}
+
+function sky(d) {
+  if (d.vis < RULES.fogVis) return "Fog";
+  if (d.rain >= 40) return "Drizzle";
+  if (d.cloud < 25) return "Sunny";
+  if (d.cloud < 60) return "Partly cloudy";
+  if (d.cloud < 85) return "Mostly cloudy";
+  return "Overcast";
+}
+
+// ---- Formatting
+function fmtTime(h) {
+  let hr = Math.floor(h), min = Math.round((h - hr) * 60);
+  if (min === 60) { hr += 1; min = 0; }
+  const ap = hr >= 12 ? "pm" : "am";
+  const h12 = ((hr + 11) % 12) + 1;
+  return min ? `${h12}:${String(min).padStart(2, "0")}${ap}` : `${h12}${ap}`;
+}
+function half(x) { return Math.round(x * 2) / 2; }
+function fmtNum(x) {
+  const w = Math.floor(x), frac = x - w;
+  if (frac === 0) return String(w);
+  return w === 0 ? "½" : `${w}½`;
+}
+function fmtRange(lo, hi, unit = "hours") {
+  lo = half(lo); hi = half(hi);
+  if (lo === hi) return `about ${fmtNum(lo)} ${lo === 1 ? "hour" : unit}`;
+  return `about ${fmtNum(lo)}–${fmtNum(hi)} ${unit}`;
+}
+function fmtTimeRange(a, b) {
+  return Math.abs(a - b) < 0.01 ? fmtTime(a) : `${fmtTime(a).replace(/(am|pm)$/, m => (a < 12) === (b < 12) ? "" : m)}–${fmtTime(b)}`;
+}
+function spanText(vals, unit) {
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  return lo === hi ? `${lo}${unit}` : `${lo}–${hi}${unit}`;
+}
+
+const END_PHRASE = {
+  wind: () => `then the wind picks up`,
+  fog: () => `then the fog rolls back in`,
+  rain: () => `then the rain chance rises`,
+  cold: () => `then it cools below 60°`,
+  hot: () => `then it gets too warm (over 72°)`,
+  dark: () => `sunset (${fmtTime(SUNSET)})`,
+};
+const START_PHRASE = {
+  wind: t => `The wind has died down as of ${t}.`,
+  fog: t => `The fog has cleared as of ${t}.`,
+  rain: t => `The rain chance has dropped as of ${t}.`,
+  cold: t => `It has warmed past 60° as of ${t}.`,
+  hot: t => `It has cooled below 72° as of ${t}.`,
+};
+
+// ---- Find great windows and pick the updates
+function analyze(day) {
+  const hours = day.hours.map(toHour).map(d => ({ ...d, ...classify(d) }));
+  const windows = [];
+  let i = 0;
+  while (i < hours.length) {
+    if (hours[i].status !== "great") { i++; continue; }
+    let j = i;
+    while (j + 1 < hours.length && hours[j + 1].status === "great") j++;
+    windows.push(buildWindow(hours, i, j));
+    i = j + 1;
+  }
+
+  // Longest windows first, keep those starting 2.5h+ after any picked one.
+  const picked = [], skipped = [];
+  [...windows].sort((a, b) => b.len - a.len || a.start - b.start).forEach(w => {
+    const clash = picked.find(p => Math.abs(p.start - w.start) < MIN_GAP);
+    if (picked.length >= 2 || clash) skipped.push({ w, reason: clash ? "too soon after another update" : "already two updates today" });
+    else picked.push(w);
+  });
+  picked.sort((a, b) => a.start - b.start);
+
+  const updates = picked.map(w => ({ kind: "start", at: w.start, w }));
+  // One long window: add a "still great" reminder partway through.
+  if (picked.length === 1 && picked[0].len >= 5) {
+    const w = picked[0];
+    updates.push({ kind: "reminder", at: w.start + 3, w });
+  }
+  return { hours, windows, updates, skipped };
+}
+
+function buildWindow(hours, i, j) {
+  const slice = hours.slice(i, j + 1);
+  const start = hours[i].h;
+  const next = hours[j + 1];
+  const prev = hours[i - 1];
+  const end = Math.min(hours[j].h + 1, SUNSET);
+  const endCause = next && next.h < SUNSET ? next.fails[0] : "dark";
+  const volatile = VOLATILE.has(endCause);
+  const nextOkay = next && next.status === "okay";
+  return {
+    start, end, len: end - start, slice, endCause, volatile, nextOkay,
+    startCause: prev && prev.status !== "night" ? prev.fails[0] : null,
+  };
+}
+
+// Duration range from time t to the window's end, widened where the forecast is shaky.
+function durationRange(w, from) {
+  const base = w.end - from;
+  if (w.endCause === "dark") return [Math.max(0.5, base - 0.5), base];
+  const lo = Math.max(0.5, base - (w.volatile ? 1 : 0.5));
+  const hi = Math.min(base + (w.nextOkay ? 1 : 0.5), SUNSET - from);
+  return [lo, hi];
+}
+
+function whyGreat(w) {
+  const winds = w.slice.map(d => d.wind), temps = w.slice.map(d => d.temp);
+  const avgWind = winds.reduce((a, b) => a + b, 0) / winds.length;
+  const avgCloud = w.slice.reduce((a, d) => a + d.cloud, 0) / w.slice.length;
+  const reasons = [];
+  reasons.push(`${avgWind < 7 ? "Barely any wind" : "Light wind"} (${spanText(winds, " mph")})`);
+  reasons.push(`Comfortable temperatures (${spanText(temps, "°F")})`);
+  reasons.push(avgCloud < 25 ? "Sunny skies" : avgCloud < 60 ? "Sun with a few clouds" : "Soft cloud cover, no fog");
+  reasons.push("No rain expected");
+  return reasons;
+}
+
+// ---- Render
+let current = 0;
+const $ = id => document.getElementById(id);
+
+function renderChips() {
+  $("chips").innerHTML = DAYS.map((d, i) =>
+    `<button class="chip" aria-pressed="${i === current}" data-i="${i}">${d.short}</button>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(b =>
+    b.addEventListener("click", () => { current = +b.dataset.i; render(); }));
+}
+
+function render() {
+  const day = DAYS[current];
+  const { hours, windows, updates, skipped } = analyze(day);
+  renderChips();
+  $("daydesc").textContent = day.desc;
+
+  // Verdict
+  const okayHours = hours.filter(h => h.status === "okay").length;
+  const cls = windows.length ? "great" : okayHours >= 3 ? "okay" : "meh";
+  const word = { great: "Great", okay: "Okay", meh: "Not the best" }[cls];
+  const greatHrs = windows.reduce((a, w) => a + w.len, 0);
+  const sum = windows.length
+    ? `${windows.length} great ${windows.length === 1 ? "window" : "windows"}, about ${fmtNum(half(greatHrs))} hours in total · ${updates.length} ${updates.length === 1 ? "update" : "updates"}`
+    : "No great windows today, so no updates.";
+  $("verdict").className = `verdict ${cls}`;
+  $("verdict").innerHTML = `<div class="label">Today looks</div><div class="word">${word}</div><div class="sum">${sum}</div>`;
+
+  // Notifications
+  if (!updates.length) {
+    $("notifs").innerHTML = `<div class="empty">No updates today. We only ping you when it's genuinely great outside.</div>`;
+  } else {
+    $("notifs").innerHTML = updates.map(u => notifHTML(u)).join("") +
+      skipped.map(s => `<p class="skipnote">Skipped a ${fmtNum(half(s.w.len))}-hour window at ${fmtTime(s.w.start)}: ${s.reason}.</p>`).join("");
+  }
+
+  // Hourly
+  const bellAt = new Set(updates.map(u => Math.floor(u.at)));
+  $("hours").innerHTML = hours.map(d => {
+    const cls = d.status;
+    const nums = cls === "night" ? `${d.temp}° · ${d.wind} mph` : `${d.temp}° · ${d.wind}<span style="opacity:.7">/${d.gust}</span> mph${d.rain >= 20 ? ` · ${d.rain}%` : ""}`;
+    return `<div class="row ${cls}">
+      <span class="t">${fmtTime(d.h)}</span><span class="dot"></span>
+      <span class="sky">${cls === "night" ? "After sunset" : sky(d)}${bellAt.has(d.h) ? '<span class="bell">● update</span>' : ""}</span>
+      <span class="nums">${nums}</span></div>`;
+  }).join("");
+}
+
+function notifHTML(u) {
+  const w = u.w;
+  const [lo, hi] = durationRange(w, u.at);
+  const endPhrase = END_PHRASE[w.endCause](fmtTime(w.end));
+  const first = w.slice.find(d => d.h >= Math.floor(u.at)) || w.slice[0];
+  const title = u.kind === "start"
+    ? `Great out now, for ${fmtRange(lo, hi)}`
+    : `Still great, with ${fmtRange(lo, hi)} left`;
+  const untilText = w.endCause === "dark"
+    ? `Good until sunset (${fmtTime(SUNSET)}).`
+    : `Likely good until ${fmtTimeRange(u.at + lo, u.at + hi)}, ${endPhrase}.`;
+  const body = `${sky(first)}, ${first.temp}°F, wind ${first.wind} mph. ${untilText}`;
+
+  const why = whyGreat(w).map(r => `<li>${r}</li>`);
+  if (u.kind === "start" && w.startCause && START_PHRASE[w.startCause]) why.unshift(`<li>${START_PHRASE[w.startCause](fmtTime(w.start))}</li>`);
+  if (w.volatile) why.push(`<li>Why it's a range: wind and fog timing are hard to forecast in SF, so the end could shift by about an hour.</li>`);
+  else if (w.endCause !== "dark") why.push(`<li>Why it's a range: forecasts can be off by half an hour or so.</li>`);
+
+  return `<div class="notif">
+    <div class="notif-head"><span class="appicon">☀</span><span>Time to Step Out</span><span class="when">${fmtTime(u.at)}</span></div>
+    <div class="notif-title">${title}</div>
+    <div class="notif-body">${body}</div>
+    <details><summary>Why it's great ›</summary><ul>${why.join("")}</ul></details>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
