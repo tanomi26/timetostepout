@@ -111,7 +111,7 @@
     border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
   }
   .chip[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); border-color: var(--chip-on); }
-  .daydesc { font-size: 14px; color: var(--muted); margin: 10px 0 0; font-style: italic; }
+  .daydesc { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
 
   .verdict { margin-top: 14px; border-radius: 20px; padding: 16px 18px; background: var(--card); border: 1px solid var(--line); }
   .verdict .label { font-size: 12px; color: var(--muted); }
@@ -156,6 +156,7 @@
   .row.great .dot { background: var(--great); }
   .row.okay .dot { background: var(--okay); }
   .row.meh .dot { background: var(--meh); opacity: .55; }
+  .row.past { opacity: .5; }
   .row.night { background: var(--night-bg); color: var(--muted); }
   .row.night .dot { background: transparent; border: 1.5px solid var(--meh); }
   .bell { display: block; color: var(--great); font-size: 12px; font-weight: 600; line-height: 1.2; }
@@ -186,7 +187,7 @@
 </style>
 </head>
 <body>
-<p class="caption">Prototype: pick a sample day to see which updates you'd get. The data is made up but has the same shape as an Open-Meteo hourly forecast.</p>
+<p class="caption">Prototype: the updates you'd get today and tomorrow, from the live Open-Meteo forecast for Pacific Heights / Alamo Square.</p>
 
 <div class="phone">
   <div class="statusbar"><span>9:41</span><span class="island"></span><span>5G</span></div>
@@ -215,72 +216,53 @@
 </div>
 
 <script>
-// ---- Sample data: hourly rows for 7am–8pm. [temp °F, wind mph, gust mph, cloud %, visibility mi, rain chance %]
-const SUNSET = 18 + 25 / 60; // ~6:25pm, mid-October
-const FIRST_HOUR = 7;
+// ---- Live forecast from Open-Meteo (free, no key). Point between Alamo Square and Lafayette Park.
+const LAT = 37.784, LON = -122.436;
+const TZ = "America/Los_Angeles";
+const FIRST_HOUR = 7, LAST_HOUR = 20;
+const API = "https://api.open-meteo.com/v1/forecast?" + new URLSearchParams({
+  latitude: LAT, longitude: LON, timezone: TZ, forecast_days: 2,
+  hourly: "temperature_2m,wind_speed_10m,wind_gusts_10m,cloud_cover,visibility,precipitation_probability",
+  daily: "sunset", temperature_unit: "fahrenheit", wind_speed_unit: "mph",
+});
+let SUNSET = 18.5; // set per day from the forecast
+let DAYS = [];
 
-const DAYS = [
-  {
-    short: "Fog → sun",
-    desc: "A classic foggy morning that clears to a sunny afternoon",
-    hours: [
-      [54,4,8,100,0.5,10],[55,4,8,100,0.6,10],[56,5,9,95,1.0,5],[58,5,9,80,1.8,5],
-      [61,6,10,40,6,0],[64,7,12,15,10,0],[66,8,13,5,10,0],[67,9,15,5,10,0],
-      [66,11,18,5,10,0],[64,15,24,10,10,0],[62,17,26,20,10,0],[59,16,24,50,8,0],
-      [57,14,20,70,5,0],[56,12,18,85,3,0],
-    ],
-  },
-  {
-    short: "Windy afternoon",
-    desc: "A windy afternoon after a nice lunch",
-    hours: [
-      [55,6,10,60,6,0],[57,7,11,50,8,0],[59,8,12,30,10,0],[61,8,13,20,10,0],
-      [63,9,14,10,10,0],[65,10,16,10,10,0],[65,13,21,10,10,0],[64,18,28,15,10,0],
-      [63,21,31,20,10,0],[62,22,32,20,10,0],[60,20,30,25,10,0],[58,18,27,30,10,0],
-      [57,16,24,40,10,0],[56,14,21,50,10,0],
-    ],
-  },
-  {
-    short: "Warm evening",
-    desc: "A rare warm, still evening",
-    hours: [
-      [58,3,6,90,3,0],[60,3,6,60,6,0],[63,4,7,40,10,0],[66,5,8,20,10,0],
-      [69,7,11,10,10,0],[73,9,14,5,10,0],[75,10,15,0,10,0],[76,10,16,0,10,0],
-      [74,8,13,0,10,0],[72,6,10,0,10,0],[70,4,8,0,10,0],[68,3,6,5,10,0],
-      [66,2,5,10,10,0],[64,2,5,15,10,0],
-    ],
-  },
-  {
-    short: "Grey all day",
-    desc: "An all-day grey day where nothing qualifies",
-    hours: [
-      [54,8,12,100,0.8,50],[54,9,13,100,0.9,55],[55,10,14,100,1.2,50],[56,10,15,100,1.5,45],
-      [57,11,16,100,1.8,45],[58,12,18,100,2.2,40],[58,13,19,100,2.4,40],[58,13,20,100,2.4,45],
-      [57,14,21,100,2.0,50],[56,14,21,100,1.6,55],[55,13,20,100,1.2,55],[55,12,18,100,0.9,60],
-      [54,11,17,100,0.8,60],[54,10,15,100,0.7,55],
-    ],
-  },
-  {
-    short: "Breezy middle",
-    desc: "A crisp, clear day with a breezy middle",
-    hours: [
-      [52,4,7,0,10,0],[56,5,8,0,10,0],[60,6,9,0,10,0],[62,8,12,0,10,0],
-      [63,12,19,0,10,0],[64,15,23,0,10,0],[64,16,24,0,10,0],[64,13,20,5,10,0],
-      [64,10,16,5,10,0],[63,8,13,5,10,0],[61,6,10,10,10,0],[58,5,9,10,10,0],
-      [56,5,8,15,10,0],[55,5,8,20,10,0],
-    ],
-  },
-];
+const hourOf = iso => +iso.slice(11, 13) + +iso.slice(14, 16) / 60;
+
+async function loadForecast() {
+  const res = await fetch(API);
+  if (!res.ok) throw new Error(`Open-Meteo returned ${res.status}`);
+  const data = await res.json();
+  const H = data.hourly;
+  return data.daily.time.map((date, di) => ({
+    date,
+    short: di === 0 ? "Today" : "Tomorrow",
+    sunset: hourOf(data.daily.sunset[di]),
+    hours: H.time.map((t, i) => ({ t, i }))
+      .filter(({ t }) => t.startsWith(date) && hourOf(t) >= FIRST_HOUR && hourOf(t) <= LAST_HOUR)
+      .map(({ t, i }) => ({
+        h: hourOf(t),
+        temp: Math.round(H.temperature_2m[i]),
+        wind: Math.round(H.wind_speed_10m[i]),
+        gust: Math.round(H.wind_gusts_10m[i]),
+        cloud: H.cloud_cover[i] ?? 0,
+        vis: H.visibility[i] == null ? 10 : Math.round(H.visibility[i] / 160.934) / 10, // m -> mi
+        rain: H.precipitation_probability[i] ?? 0,
+      })),
+  }));
+}
+
+function nowInSF() {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date()).reduce((o, p) => (o[p.type] = p.value, o), {});
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, h: +parts.hour + +parts.minute / 60 };
+}
 
 // ---- Rules
 const RULES = { tMin: 60, tMax: 72, wind: 12, gust: 20, rain: 20, fogVis: 2 };
 const MIN_GAP = 2.5;
 const VOLATILE = new Set(["wind", "fog"]); // hard-to-forecast changes in SF
-
-function toHour(row, i) {
-  const [temp, wind, gust, cloud, vis, rain] = row;
-  return { h: FIRST_HOUR + i, temp, wind, gust, cloud, vis, rain };
-}
 
 function classify(d) {
   if (d.h >= SUNSET) return { status: "night", fails: ["dark"] };
@@ -349,7 +331,7 @@ const START_PHRASE = {
 
 // ---- Find great windows and pick the updates
 function analyze(day) {
-  const hours = day.hours.map(toHour).map(d => ({ ...d, ...classify(d) }));
+  const hours = day.hours.map(d => ({ ...d, ...classify(d) }));
   const windows = [];
   let i = 0;
   while (i < hours.length) {
@@ -427,9 +409,13 @@ function renderChips() {
 
 function render() {
   const day = DAYS[current];
+  SUNSET = day.sunset;
   const { hours, windows, updates, skipped } = analyze(day);
+  const now = nowInSF();
+  const nowH = day.date === now.date ? now.h : day.date < now.date ? 24 : -1;
   renderChips();
-  $("daydesc").textContent = day.desc;
+  const dateLabel = new Date(day.date + "T12:00").toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  $("daydesc").textContent = `${dateLabel} · live forecast from Open-Meteo, loaded ${fmtTime(now.h)}`;
 
   // Verdict
   const okayHours = hours.filter(h => h.status === "okay").length;
@@ -438,15 +424,15 @@ function render() {
   const greatHrs = windows.reduce((a, w) => a + w.len, 0);
   const sum = windows.length
     ? `${windows.length} great ${windows.length === 1 ? "window" : "windows"}, about ${fmtNum(half(greatHrs))} hours in total · ${updates.length} ${updates.length === 1 ? "update" : "updates"}`
-    : "No great windows today, so no updates.";
+    : `No great windows ${day.short.toLowerCase()}, so no updates.`;
   $("verdict").className = `verdict ${cls}`;
-  $("verdict").innerHTML = `<div class="label">Today looks</div><div class="word">${word}</div><div class="sum">${sum}</div>`;
+  $("verdict").innerHTML = `<div class="label">${day.short} looks</div><div class="word">${word}</div><div class="sum">${sum}</div>`;
 
   // Notifications
   if (!updates.length) {
-    $("notifs").innerHTML = `<div class="empty">No updates today. We only ping you when it's genuinely great outside.</div>`;
+    $("notifs").innerHTML = `<div class="empty">No updates ${day.short.toLowerCase()}. We only ping you when it's genuinely great outside.</div>`;
   } else {
-    $("notifs").innerHTML = updates.map(u => notifHTML(u)).join("") +
+    $("notifs").innerHTML = updates.map(u => notifHTML(u, nowH)).join("") +
       skipped.map(s => `<p class="skipnote">Skipped a ${fmtNum(half(s.w.len))}-hour window at ${fmtTime(s.w.start)}: ${s.reason}.</p>`).join("");
   }
 
@@ -455,14 +441,14 @@ function render() {
   $("hours").innerHTML = hours.map(d => {
     const cls = d.status;
     const nums = cls === "night" ? `${d.temp}° · ${d.wind} mph` : `${d.temp}° · ${d.wind}<span style="opacity:.7">/${d.gust}</span> mph${d.rain >= 20 ? ` · ${d.rain}%` : ""}`;
-    return `<div class="row ${cls}">
+    return `<div class="row ${cls}${d.h + 1 <= nowH ? " past" : ""}">
       <span class="t">${fmtTime(d.h)}</span><span class="dot"></span>
       <span class="sky">${cls === "night" ? "After sunset" : sky(d)}${bellAt.has(d.h) ? '<span class="bell">● update</span>' : ""}</span>
       <span class="nums">${nums}</span></div>`;
   }).join("");
 }
 
-function notifHTML(u) {
+function notifHTML(u, nowH) {
   const w = u.w;
   const [lo, hi] = durationRange(w, u.at);
   const endPhrase = END_PHRASE[w.endCause](fmtTime(w.end));
@@ -481,7 +467,7 @@ function notifHTML(u) {
   else if (w.endCause !== "dark") why.push(`<li>Why it's a range: forecasts can be off by half an hour or so.</li>`);
 
   return `<div class="notif">
-    <div class="notif-head"><span class="appicon">☀</span><span>Time to Step Out</span><span class="when">${fmtTime(u.at)}</span></div>
+    <div class="notif-head"><span class="appicon">☀</span><span>Time to Step Out</span><span class="when">${fmtTime(u.at)}${u.at > nowH ? " · upcoming" : ""}</span></div>
     <div class="notif-title">${title}</div>
     <div class="notif-body">${body}</div>
     <details><summary>Why it's great ›</summary><ul>${why.join("")}</ul></details>
@@ -495,7 +481,19 @@ $("hourlyToggle").addEventListener("click", () => {
   $("hourly").hidden = !open;
 });
 
-render();
+async function start() {
+  $("verdict").className = "verdict";
+  $("verdict").innerHTML = `<div class="label">Loading the live forecast…</div>`;
+  try {
+    DAYS = await loadForecast();
+  } catch (err) {
+    $("verdict").className = "verdict meh";
+    $("verdict").innerHTML = `<div class="label">Couldn't load the forecast</div><div class="sum">${err.message}. Check your connection and reload the page.</div>`;
+    return;
+  }
+  render();
+}
+start();
 </script>
 </body>
 </html>
