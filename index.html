@@ -211,7 +211,7 @@
       <div class="legend"><span class="g">Great</span><span class="o">Okay</span><span class="m">Not the best</span><span class="n">After sunset</span></div>
     </div>
 
-    <p class="rules">"Great" means 60–72°F, wind under 12 mph, gusts under 20 mph, under 20% chance of rain, and no fog. Updates are at least 2½ hours apart, with at most two a day. Days with no great weather get no updates.</p>
+    <p class="rules">"Great" means 60–76°F, wind under 14 mph, gusts under 20 mph, under 40% chance of rain, and no fog. Clouds are fine. These limits come from 14 outings you enjoyed. Updates are at least 2½ hours apart, with at most two a day. Days with no great weather get no updates.</p>
   </div>
 </div>
 
@@ -260,7 +260,7 @@ function nowInSF() {
 }
 
 // ---- Rules
-const RULES = { tMin: 60, tMax: 72, wind: 12, gust: 20, rain: 20, fogVis: 2 };
+const RULES = { tMin: 60, tMax: 76, wind: 14, gust: 20, rain: 40, fogVis: 2 }; // tuned from 14 real outings
 const MIN_GAP = 2.5;
 const VOLATILE = new Set(["wind", "fog"]); // hard-to-forecast changes in SF
 
@@ -273,7 +273,7 @@ function classify(d) {
   if (d.temp < RULES.tMin) fails.push("cold");
   if (d.temp > RULES.tMax) fails.push("hot");
   if (!fails.length) return { status: "great", fails };
-  const okay = d.temp >= 55 && d.temp <= 76 && d.wind < 16 && d.gust < 26 && d.rain < 40 && d.vis >= 1;
+  const okay = d.temp >= 55 && d.temp <= 80 && d.wind < 18 && d.gust < 26 && d.rain < 50 && d.vis >= 1;
   return { status: okay ? "okay" : "meh", fails };
 }
 
@@ -317,16 +317,16 @@ const END_PHRASE = {
   wind: () => `then the wind picks up`,
   fog: () => `then the fog rolls back in`,
   rain: () => `then the rain chance rises`,
-  cold: () => `then it cools below 60°`,
-  hot: () => `then it gets too warm (over 72°)`,
+  cold: () => `then it cools below ${RULES.tMin}°`,
+  hot: () => `then it gets too warm (over ${RULES.tMax}°)`,
   dark: () => `sunset (${fmtTime(SUNSET)})`,
 };
 const START_PHRASE = {
   wind: t => `The wind has died down as of ${t}.`,
   fog: t => `The fog has cleared as of ${t}.`,
   rain: t => `The rain chance has dropped as of ${t}.`,
-  cold: t => `It has warmed past 60° as of ${t}.`,
-  hot: t => `It has cooled below 72° as of ${t}.`,
+  cold: t => `It has warmed past ${RULES.tMin}° as of ${t}.`,
+  hot: t => `It has cooled below ${RULES.tMax}° as of ${t}.`,
 };
 
 // ---- Find great windows and pick the updates
@@ -386,13 +386,14 @@ function durationRange(w, from) {
 
 function whyGreat(w) {
   const winds = w.slice.map(d => d.wind), temps = w.slice.map(d => d.temp);
-  const avgWind = winds.reduce((a, b) => a + b, 0) / winds.length;
+  const maxWind = Math.max(...winds);
   const avgCloud = w.slice.reduce((a, d) => a + d.cloud, 0) / w.slice.length;
   const reasons = [];
-  reasons.push(`${avgWind < 7 ? "Barely any wind" : "Light wind"} (${spanText(winds, " mph")})`);
+  reasons.push(`${maxWind < 7 ? "Barely any wind" : maxWind < 10 ? "Light wind" : "A gentle breeze at most"} (${spanText(winds, " mph")})`);
   reasons.push(`Comfortable temperatures (${spanText(temps, "°F")})`);
   reasons.push(avgCloud < 25 ? "Sunny skies" : avgCloud < 60 ? "Sun with a few clouds" : "Soft cloud cover, no fog");
-  reasons.push("No rain expected");
+  const maxRain = Math.max(...w.slice.map(d => d.rain));
+  reasons.push(maxRain < 20 ? "No rain expected" : `Only a small chance of light rain (up to ${maxRain}%)`);
   return reasons;
 }
 
