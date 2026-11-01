@@ -11,6 +11,7 @@
     --card: #ffffff;
     --ink: #17212b;
     --muted: #5e6b78;
+    --faint: #8a95a0;
     --line: #e2e6ea;
     --great: #1d7f55;
     --great-bg: #dff2e7;
@@ -32,6 +33,7 @@
       --card: #1e2328;
       --ink: #e9edf0;
       --muted: #9aa6b1;
+      --faint: #727e89;
       --line: #2b3238;
       --great: #5fd09b;
       --great-bg: #173a2a;
@@ -48,7 +50,7 @@
     }
   }
   :root[data-theme="dark"] {
-    --page: #0e1114; --phone: #15191d; --card: #1e2328; --ink: #e9edf0; --muted: #9aa6b1;
+    --page: #0e1114; --phone: #15191d; --card: #1e2328; --ink: #e9edf0; --muted: #9aa6b1; --faint: #727e89;
     --line: #2b3238; --great: #5fd09b; --great-bg: #173a2a; --okay: #e6b45e; --okay-bg: #3a2e17;
     --meh: #9aa6b1; --meh-bg: #262c32; --night-bg: #1b1f2a; --accent: #6cb2ec; --chip: #1e2328;
     --chip-on: #e9edf0; --chip-on-ink: #15191d; --bezel: #000000;
@@ -176,7 +178,19 @@
   .legend .o::before { background: var(--okay); }
   .legend .m::before { background: var(--meh); opacity: .55; }
   .legend .n::before { border: 1.5px solid var(--meh); }
-  .rules { font-size: 12px; color: var(--muted); margin: 18px 2px 0; }
+  .section-card { margin: 22px 0 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); overflow: hidden; }
+  .section-card:has(.section-toggle:hover) { border-color: var(--muted); }
+  .section-card .section-toggle { margin: 0; border: 0; border-radius: 0; }
+  .section-card .hours { border: 0; border-radius: 0; border-top: 1px solid var(--line); }
+  .section-card .legend { margin: 0; padding: 10px 14px 12px; border-top: 1px solid var(--line); }
+  .section-title.faint { color: var(--faint); }
+  .rules { font-size: 13px; color: var(--muted); margin: 0; padding: 12px 14px 2px; border-top: 1px solid var(--line); }
+  .rules h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 4px; }
+  .rules h3 + ul { margin-top: 0; }
+  .rules ul { margin: 0 0 12px; padding-left: 18px; }
+  .rules li { margin: 2px 0; }
+  .nowrap { white-space: nowrap; }
+  .rules-note { font-style: italic; margin: -6px 0 12px; }
 
   @media (max-width: 440px) {
     body { padding: 0; }
@@ -203,15 +217,37 @@
     <h2>Today's updates</h2>
     <div id="notifs"></div>
 
-    <button class="section-toggle" id="hourlyToggle" aria-expanded="false" aria-controls="hourly">
-      <span class="section-title">Hour by hour</span><span class="toggle-label">Show ›</span>
-    </button>
-    <div id="hourly" hidden>
-      <div class="hours" id="hours"></div>
-      <div class="legend"><span class="g">Great</span><span class="o">Okay</span><span class="m">Not the best</span><span class="n">After sunset</span></div>
+    <div class="section-card">
+      <button class="section-toggle" id="hourlyToggle" aria-expanded="false" aria-controls="hourly">
+        <span class="section-title">Hour by hour</span><span class="toggle-label">Show ›</span>
+      </button>
+      <div id="hourly" hidden>
+        <div class="hours" id="hours"></div>
+        <div class="legend"><span class="g">Great</span><span class="o">Okay</span><span class="m">Not the best</span><span class="n">After sunset</span></div>
+      </div>
     </div>
 
-    <p class="rules">"Great" means 60–76°F, wind under 14 mph, gusts under 20 mph, under 40% chance of rain, and no fog. Clouds are fine. These limits come from 14 outings you enjoyed. Updates are at least 2½ hours apart, with at most two a day. Days with no great weather get no updates.</p>
+    <div class="section-card">
+      <button class="section-toggle" aria-expanded="false" aria-controls="faqs">
+        <span class="section-title faint">FAQs</span><span class="toggle-label">Show ›</span>
+      </button>
+      <div class="rules" id="faqs" hidden>
+        <h3>What counts as great?</h3>
+        <ul>
+          <li>60–76°F</li>
+          <li>Wind under 14 mph, gusts under 20 mph</li>
+          <li>Under 40% chance of rain</li>
+          <li>No fog (clouds are fine)</li>
+        </ul>
+        <p class="rules-note">Based on 14 outings you enjoyed.</p>
+        <h3>How do updates work?</h3>
+        <ul>
+          <li>At most two a day</li>
+          <li>At least 2½ hours apart</li>
+          <li>None on days without great weather</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -424,7 +460,7 @@ function render() {
   const word = { great: "Great", okay: "Okay", meh: "Not the best" }[cls];
   const greatHrs = windows.reduce((a, w) => a + w.len, 0);
   const sum = windows.length
-    ? `${windows.length} great ${windows.length === 1 ? "window" : "windows"}, about ${fmtNum(half(greatHrs))} hours in total · ${updates.length} ${updates.length === 1 ? "update" : "updates"}`
+    ? `${windows.length} great ${windows.length === 1 ? "window" : "windows"}, about ${fmtNum(half(greatHrs))} hours in total`
     : `No great windows ${day.short.toLowerCase()}, so no updates.`;
   $("verdict").className = `verdict ${cls}`;
   $("verdict").innerHTML = `<div class="label">${day.short} looks</div><div class="word">${word}</div><div class="sum">${sum}</div>`;
@@ -455,12 +491,14 @@ function notifHTML(u, nowH) {
   const endPhrase = END_PHRASE[w.endCause](fmtTime(w.end));
   const first = w.slice.find(d => d.h >= Math.floor(u.at)) || w.slice[0];
   const title = u.kind === "start"
-    ? `Great out now, for ${fmtRange(lo, hi)}`
-    : `Still great, with ${fmtRange(lo, hi)} left`;
+    ? `Great outside for ${fmtRange(lo, hi)}`
+    : `Still great outside, ${fmtRange(lo, hi)} left`;
   const untilText = w.endCause === "dark"
     ? `Good until sunset (${fmtTime(SUNSET)}).`
-    : `Likely good until ${fmtTimeRange(u.at + lo, u.at + hi)}, ${endPhrase}.`;
-  const body = `${sky(first)}, ${first.temp}°F, wind ${first.wind} mph. ${untilText}`;
+    : `Likely good until <span class="nowrap">${fmtTimeRange(u.at + lo, u.at + hi)}</span>, ${endPhrase}.`;
+  const skyWord = { Overcast: "Cloudy", "Mostly cloudy": "Cloudy" }[sky(first)] || sky(first);
+  const windWord = first.wind < 7 ? "very little wind" : first.wind < 10 ? "low wind" : "a light breeze";
+  const body = `${skyWord} with ${windWord}. ${untilText}`;
 
   const why = whyGreat(w).map(r => `<li>${r}</li>`);
   if (u.kind === "start" && w.startCause && START_PHRASE[w.startCause]) why.unshift(`<li>${START_PHRASE[w.startCause](fmtTime(w.start))}</li>`);
@@ -475,12 +513,12 @@ function notifHTML(u, nowH) {
   </div>`;
 }
 
-$("hourlyToggle").addEventListener("click", () => {
-  const btn = $("hourlyToggle"), open = btn.getAttribute("aria-expanded") !== "true";
+document.querySelectorAll(".section-toggle").forEach(btn => btn.addEventListener("click", () => {
+  const open = btn.getAttribute("aria-expanded") !== "true";
   btn.setAttribute("aria-expanded", open);
   btn.querySelector(".toggle-label").textContent = open ? "Hide" : "Show ›";
-  $("hourly").hidden = !open;
-});
+  $(btn.getAttribute("aria-controls")).hidden = !open;
+}));
 
 async function start() {
   $("verdict").className = "verdict";
