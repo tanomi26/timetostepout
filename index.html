@@ -122,6 +122,12 @@
   .verdict.okay .word { color: var(--okay); }
   .verdict.meh .word { color: var(--meh); }
   .verdict .sum { font-size: 14px; color: var(--muted); }
+  .verdict .empty-title { font-size: 18px; font-weight: 650; margin-bottom: 4px; }
+  .verdict.loading .empty-title::before { content: "☀"; display: inline-block; margin-right: 8px; color: var(--okay); animation: spin 3s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .verdict.loading .empty-title::before { animation: none; } }
+  .retry { margin-top: 12px; border: 0; border-radius: 999px; padding: 8px 16px; background: var(--chip-on); color: var(--chip-on-ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .empty-row { padding: 14px; color: var(--muted); font-size: 14px; }
 
   .notif {
     background: var(--card); border: 1px solid var(--line); border-radius: 18px;
@@ -446,6 +452,12 @@ function renderChips() {
 
 function render() {
   const day = DAYS[current];
+  if (!day || !day.hours.length) {
+    renderChips();
+    $("daydesc").textContent = "";
+    showEmpty("noHours");
+    return;
+  }
   SUNSET = day.sunset;
   const { hours, windows, updates, skipped } = analyze(day);
   const now = nowInSF();
@@ -520,14 +532,44 @@ document.querySelectorAll(".section-toggle").forEach(btn => btn.addEventListener
   $(btn.getAttribute("aria-controls")).hidden = !open;
 }));
 
+// Friendly placeholders for when there's no forecast to show yet.
+const EMPTY = {
+  loading: {
+    title: "Checking the sky…",
+    text: "Getting the latest forecast for your neighborhood. This only takes a moment.",
+    updates: "Your updates will show up here in a moment.",
+  },
+  offline: {
+    title: "Can't reach the forecast right now",
+    text: "Check your internet connection, then try again.",
+    updates: "No updates to show until the forecast loads.",
+    retry: true,
+  },
+  noHours: {
+    title: "No forecast for this day yet",
+    text: "The forecast hasn't come in yet. Check back a little later.",
+    updates: "No updates to show yet.",
+  },
+};
+
+function showEmpty(kind) {
+  const e = EMPTY[kind];
+  $("verdict").className = `verdict empty-state ${kind}`;
+  $("verdict").innerHTML = `<div class="empty-title">${e.title}</div><div class="sum">${e.text}</div>` +
+    (e.retry ? `<button class="retry" id="retry">Try again</button>` : "");
+  $("notifs").innerHTML = `<div class="empty">${e.updates}</div>`;
+  $("hours").innerHTML = `<div class="empty-row">The hourly forecast will appear here once it loads.</div>`;
+  if (e.retry) $("retry").addEventListener("click", start);
+  if (kind !== "noHours") { $("chips").innerHTML = ""; $("daydesc").textContent = ""; }
+}
+
 async function start() {
-  $("verdict").className = "verdict";
-  $("verdict").innerHTML = `<div class="label">Loading the live forecast…</div>`;
+  showEmpty("loading");
   try {
     DAYS = await loadForecast();
   } catch (err) {
-    $("verdict").className = "verdict meh";
-    $("verdict").innerHTML = `<div class="label">Couldn't load the forecast</div><div class="sum">${err.message}. Check your connection and reload the page.</div>`;
+    console.error("Forecast failed to load:", err);
+    showEmpty("offline");
     return;
   }
   render();
