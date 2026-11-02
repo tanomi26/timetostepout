@@ -25,12 +25,11 @@ These limits were tuned from 14 real outings that felt great.
 
 ## Try it
 
-It's a single HTML file with no install, accounts or backend.
+**Open the live app: [tanomi26.github.io/timetostepout](https://tanomi26.github.io/timetostepout/)**
 
-1. Download [`index.html`](index.html)
-2. Open it in your browser
+It works on your phone or laptop, with no install or account.
 
-It needs an internet connection to load the forecast.
+Prefer your own copy? It's a single HTML file: download [`index.html`](index.html) and open it in your browser. It needs an internet connection to load the forecast.
 
 ## How it works
 
